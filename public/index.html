@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineCatalog | Premium Movie Manager</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎬 CineCatalog</h1>
+
+      <div class="form-grid">
+        <input type="text" id="title" placeholder="Movie Title" />
+        <input type="text" id="genre" placeholder="Genre (e.g. Action)" />
+        <input type="number" id="year" placeholder="Year" />
+        <input
+          type="number"
+          step="0.1"
+          id="rating"
+          placeholder="Rating (0.0)"
+        />
+        <button class="btn-primary" onclick="addMovie()">
+          + Add to Library
+        </button>
+      </div>
+
+      <div class="controls">
+        <h2>Your Collection</h2>
+        <div>
+          <button class="btn-secondary" onclick="loadMovies()">View All</button>
+          <button
+            class="btn-secondary"
+            onclick="loadTopRated()"
+            style="border-left: 3px solid #fbbf24"
+          >
+            ⭐ Top Rated
+          </button>
+        </div>
+      </div>
+
+      <div id="movieGrid" class="movie-grid"></div>
+    </div>
+
+    <script>
+      const API_URL =
+        window.location.hostname === 'localhost'
+          ? 'http://localhost:3000/api'
+          : '/api';
+
+      async function loadMovies() {
+        const res = await fetch(`${API_URL}/movies`);
+        const data = await res.json();
+        displayMovies(data);
+      }
+
+      async function loadTopRated() {
+        const res = await fetch(`${API_URL}/movies/featured/top`);
+        const data = await res.json();
+        displayMovies(data);
+      }
+
+      function displayMovies(movies) {
+        const grid = document.getElementById('movieGrid');
+        grid.innerHTML = '';
+
+        movies.forEach((movie) => {
+          const card = document.createElement('div');
+          card.className = 'movie-card';
+          card.innerHTML = `
+                    <span class="delete-icon" onclick="deleteMovie(${movie.id})">×</span>
+                    <h3>${movie.title}</h3>
+                    <div class="movie-meta">
+                        ${movie.genre} • ${movie.year}
+                    </div>
+                    <div class="rating-badge">⭐ ${movie.rating}</div>
+                `;
+          grid.appendChild(card);
+        });
+      }
+
+      async function addMovie() {
+        const title = document.getElementById('title').value;
+        const genre = document.getElementById('genre').value;
+        const year = document.getElementById('year').value;
+        const rating = document.getElementById('rating').value;
+
+        if (!title || !genre) return alert('Please fill in title and genre');
+
+        const res = await fetch(`${API_URL}/movies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, genre, year, rating }),
+        });
+
+        if (res.ok) {
+          // Clear inputs
+          document.querySelectorAll('input').forEach((i) => (i.value = ''));
+          loadMovies();
+        }
+      }
+
+      async function deleteMovie(id) {
+        if (confirm('Remove this movie from your catalog?')) {
+          await fetch(`${API_URL}/movies/${id}`, { method: 'DELETE' });
+          loadMovies();
+        }
+      }
+
+      loadMovies();
+    </script>
+  </body>
+</html>
